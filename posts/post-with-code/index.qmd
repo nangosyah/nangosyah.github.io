@@ -1,0 +1,9 @@
+---
+title: "Model Based Clustering of High Dimensional Longitudinal Data"
+author: "Tom Wellard Nangosyah"
+date: "2024-09-03"
+categories: [r, code, analysis]
+image: "image.jpg"
+---
+
+## This was my research [here](https://github.com/nangosyah/Master-Thesis-MBCLHD-2024){target="blank"}

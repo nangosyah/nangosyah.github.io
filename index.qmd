@@ -1,0 +1,15 @@
+---
+title: "About"
+image: tompassport.jpg
+about:
+  template: jolla
+  links:
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/in/tom-wellard-nangosyah-044435a1/
+    - icon: github
+      text: Github
+      href: https://github.com/nangosyah
+---
+
+Professional with a background in research, data analytics, and project management. I have experience working on data-driven projects, securing and grant management, fostering stakeholder relationships, and crafting business strategies tailored to rural and peri-urban markets. I'm passionate about driving organizational growth through strategic planning, policy development, and impact-ful research initiatives.
