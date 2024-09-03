@@ -6,4 +6,4 @@ categories: [r, code, analysis]
 image: "image.jpg"
 ---
 
-## This was my research [here](https://github.com/nangosyah/Master-Thesis-MBCLHD-2024){target="blank"}
+## This was my thesis research [here](https://github.com/nangosyah/Master-Thesis-MBCLHD-2024){target="blank"}
