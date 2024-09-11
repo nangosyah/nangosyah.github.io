@@ -6,4 +6,6 @@ categories: [r, code, analysis]
 image: "image.jpg"
 ---
 
-## This was my thesis research [here](https://github.com/nangosyah/Master-Thesis-MBCLHD-2024){target="blank"}
+## Thesis research 
+
+This was my initial Thesis Research on Model based Methods for clustering longitudinal high dimensional data, we used mixture models to classify peptides with similar deuterium exchange profiles overtime. The code for the fitting of model can be found [here](https://github.com/nangosyah/Master-Thesis-MBCLHD-2024){target="blank"}.
