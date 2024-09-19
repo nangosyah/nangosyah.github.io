@@ -1,0 +1,786 @@
+---
+title: "Using the Tidy-models suite for Machine Learning"
+author: "Tom Wellard Nangosyah"
+date: "2024-09-19"
+categories: [R,  Data Science, Classification, Machine learning, Data Processing, Tidy-models, Titanic dataset]
+image: "tidymodelsApps.png"
+---
+
+# Titanic Dataset
+
+::: callout-note
+The content of this tutorial is primarily based on the book **"Tidy Modeling with R"** by Max Kuhn and Julia Silge (2021). The analysis scheme also follows the approach outlined in the [R Classification with Tidymodels tutorial](https://www.kirenz.com/blog/posts/2021-02-17-r-classification-tidymodels/).
+:::
+
+We will use the **Titanic dataset** from Kaggle for our analysis, with the goal of building a model to predict which passengers survived the Titanic shipwreck. We will implement a classification workflow using the `tidymodels` package, demonstrating how workflows and recipes can be utilized for effective model building. Our research question is:
+
+**"What sorts of people were more likely to survive?"**
+
+To address this question, we will consider factors such as the number of lifeboats, age, gender, and socio-economic class, based on the Titanic's sinking on April 15, 1912. We will use classification methods to categorize passengers into those who survived and those who did not. Common classification techniques like logistic regression, random forests and K-nearest neighbors will be employed to optimize the solution with minimal error.
+
+First, we will load the necessary packages for the analysis:
+
+```{r load}
+#| echo: true
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(tidymodels)
+library(bundle)
+library(vetiver)
+library(pins)
+library(readr)
+library(stacks)
+library(tidyverse)
+library(skimr)
+library(GGally)
+library(ggmap)
+library(visdat)
+library(corrr)
+library(ggsignif)
+library(gt)
+library(vip)
+library(themis)
+library(purrr)
+library(keras)
+library(ranger)
+library(xgboost)
+library(kknn)
+library(reticulate)
+```
+
+We import the data for the analysis
+
+```{r data}
+#| echo: true
+#| message: false
+#| warning: false
+
+ttest <- read_csv("/Users/nangosyah/Documents/Kaggle Data-sets/titanic/test.csv")
+ttrain <- read_csv("/Users/nangosyah/Documents/Kaggle Data-sets/titanic/train.csv")
+tsub <- read_csv("/Users/nangosyah/Documents/Kaggle Data-sets/titanic/gender_submission.csv")
+```
+
+## Format Data
+
+To gain a preliminary understanding of the dataset, we will perform some exploratory data analysis (EDA). We start by examining a few rows from the dataset to get an initial impression of its structure and contents.
+
+```{r}
+glimpse(ttrain)
+```
+
+At this stage, we will ensure that the data types are correct, particularly for the target variable `Survived`, which should be a factor. Similarly, all categorical variables will be converted to factors. We shall align these data conversions both in out testing set and and training set.
+
+```{r}
+# training set
+ttrain$Sex <- as.factor(ttrain$Sex)
+ttrain$Survived <- as.factor(ttrain$Survived)
+ttrain$Pclass <- as.factor(ttrain$Pclass)
+ttrain$Embarked <- as.factor(ttrain$Embarked)
+
+# testing set
+ttest$Sex <- as.factor(ttest$Sex)
+ttest$Pclass <- as.factor(ttest$Pclass)
+ttest$Embarked <- as.factor(ttest$Embarked)
+```
+
+## **Missing data**
+
+After applying the transformations, we will now examine the first 5 records to get an initial sense of the data we're working with. This allows us to verify the changes and better understand the dataset structure.
+
+```{r}
+ttrain %>%
+  slice_head(n = 5) %>%
+  gt() 
+```
+
+From the data, we observe the presence of `NA` values in the `Cabin` and `Age` columns. We will propose methods to handle these missing values in later stages. For now, we will proceed to visualize the data structure to gain insights into its distribution and patterns.
+
+```{r}
+vis_dat(ttrain)
+```
+
+The data format appears to be in good shape after the adjustments made, aside from the missing data (`NA`s) that still need attention. To assess the extent of missingness, we will now examine the percentage of missing values across the dataset. For this task, we will use functions from the `visdat` package to visualize and quantify missingness.
+
+```{r}
+vis_miss(ttrain, sort_miss = TRUE)
+```
+
+An alternative method to the same thing could be with the is.na function from base R which can be achieved as below:
+
+```{r}
+is.na(ttrain) %>% colSums()
+```
+
+The dataset has significant missingness, with 77% missing values for the `Cabin` variable and 20% missing for `Age`. This level of missing data can cause issues, particularly for models that don't handle missingness directly. These missing values will be addressed in later stages to ensure model robustness and accuracy.
+
+## Create Variables
+
+To enhance model learning capabilities, we created a new feature: the mean age per class (`age_perclass`). This feature represents the average age of passengers within each `Pclass`, providing insight into the typical age distribution by class. Additionally, we used these class-specific means to impute missing values in the `Age` variable, ensuring that missing ages were replaced with the average age of passengers in the same class.
+
+```{r}
+ttrain <- ttrain %>%
+  group_by(Pclass) %>%
+  mutate(age_perclass = mean(Age, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(Age = ifelse(is.na(Age), age_perclass, Age))
+```
+
+## Data Overview
+
+We will now review the data overview following the manipulations using the `skimr` package. This package provides a detailed summary of the dataset, including data types, missing values, and summary statistics. Here’s how we’ll proceed:
+
+```{r}
+skim(ttrain)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.show: 'hide'
+
+ttrain %>%
+  select(Age, SibSp, Parch, Fare, age_perclass) %>%
+  ggscatmat(alpha = 0.2)
+```
+
+## Data Splitting
+
+In machine learning, we typically divide the data into a training set and a testing set. The training set is used to fit the models, while the testing set is used to evaluate their performance. To ensure that the training set is representative of the overall dataset, we must correctly partition the initial dataset.
+
+We will use a histogram to visualize the distribution of the dependent variable, `Survived`, in our data split.
+
+```{r}
+ttrain %>%
+  ggplot(aes(Survived)) +
+  geom_bar() 
+```
+
+To perform the split, we will use the `rsample` package from the `tidymodels` suite. This package helps create an object containing information about the split. We will then use the `training()` and `testing()` functions to generate the training and test sets.
+
+Here’s how to do it:
+
+```{r}
+set.seed(123)
+
+# split 3/4 of the data into the training set 
+data_split <- initial_split(ttrain, 
+                           prop = 3/4, 
+                           strata = Survived)
+
+# two sets
+data_train <- training(data_split)
+data_test <- testing(data_split)
+```
+
+## Data Exploration
+
+We will explore the training data to gain insights and identify which variables are important for modeling. This process is iterative: we may build a prototype model, analyze the results, and refine the model based on new insights from exploration.
+
+This exploration and modeling will be conducted exclusively with the training set. We shall create a copy of the training set so that we don't alter the data during our exploration phase.
+
+```{r}
+explore <- data_train
+```
+
+We will now use the training dataset to explore relationships between predictor variables and the outcome variable, `Survived`. This exploration will help us identify which variables are most relevant for predicting passenger survival.
+
+### Numerical Variables
+
+We will examine the numerical variables to check fro differences between passengers who survived and those who did not. This will help us understand how these variables vary with survival status.
+
+```{r}
+explore %>%
+  ggplot(aes(x = Survived, y = Age, 
+             fill = Survived, color = Survived)) +
+  geom_boxplot(alpha=0.4) 
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.show: 'hide'
+
+boxplot <- function(.y_var){
+  
+  # convert strings to variable
+  y_var <- sym(.y_var) 
+ 
+  # unquote variables using {{}}
+  explore %>%
+  ggplot(aes(x = Survived, y = {{y_var}},
+             fill = Survived, color = Survived)) +
+  geom_boxplot(alpha=0.4) 
+  
+}  
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.show: 'hide'
+
+y_var <- 
+  explore %>%
+  select(where(is.numeric)) %>%
+  variable.names() # obtain name
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.show: 'hide'
+
+#map(y_var, boxplot)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.show: 'hide'
+
+explore %>%
+  select(Survived, Age, age_perclass, SibSp, Parch,Fare) %>%
+  ggscatmat(color="Survived", 
+            corMethod = "spearman",
+            alpha=0.2)
+```
+
+From the exploratory data analysis (EDA), we observe that:
+
+-   Some numerical variables are on different scales.
+
+-   Several variables exhibit heavy tails and some show bi-modal distributions.
+
+To prepare the data for modeling, we need to transform these variables to approximate a normal distribution. This will help improve model performance.
+
+We will use the variables `Age`, `SibSp`, `Parch`, and `Fare` as predictors in our model.
+
+### Categorical Variables
+
+We go ahead analyse the categorical variables in relation with the dependent variable Survived. We output tables giving us an idea of the grouping in the data.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+explore %>%
+  count(Survived, Sex) %>%
+  group_by(Survived) %>%
+  mutate(percent = n / sum(n) *100,
+         percent = round(percent, 2)) %>%
+  gt() %>%
+    tab_header(
+    title = "Titanic Survivors",
+    subtitle = "0 - Died 1 - Survived"
+  ) %>%
+  cols_label(
+    Sex = "Sex",
+    n = "Districts",
+    percent = "Percent"
+  ) %>%
+  fmt_number(
+    columns = vars(n),
+    suffixing = TRUE
+  ) 
+```
+
+```{r}
+explore %>%
+  ggplot(aes(Survived, Sex)) +
+  geom_bin2d() +
+  scale_fill_continuous(type = "viridis") 
+```
+
+From the plot, we observe that the majority of passengers who died are male, highlighted in yellow, compared to females. Additionally, a higher proportion of survivors are female. We will also examine if the socio-economic status, indicated by the cabin class, can help distinguish between those who survived and those who did not.
+
+```{r}
+explore %>%
+  ggplot(aes(Survived, Pclass)) +
+  geom_bin2d() +
+  scale_fill_continuous(type = "viridis") 
+```
+
+The plot shows that the majority of passengers who died were from the lowest socio-economic class, with Class 3 having the highest number of deaths compared to Classes 1 and 2.
+
+Therefore, we will include all categorical variables `Pclass`, `Sex`, and `Embarked`—as predictors in our model.
+
+## Data Preparation
+
+To prepare our data for modeling, we will:
+
+1.  Handle missing values.
+
+2.  Address and remove outliers.
+
+3.  Perform feature selection.
+
+4.  Engineer new features.
+
+5.  Scale variables.
+
+6.  Create a validation set.
+
+We will use the `tidymodels` suite, specifically the `recipes` and `workflows` packages, for these steps.
+
+-   `recipes` are used for data processing, including:
+
+    -   **Data cleaning**: Fix or remove outliers, fill in missing values, or drop rows/columns with excessive missing data.
+
+    -   **Feature selection**: Remove attributes that do not provide useful information.
+
+    -   **Feature scaling**: Standardize or normalize features.
+
+    -   **Feature engineering**: Discretize continuous features, decompose features (e.g., extract weekday from a date), apply transformations and aggregate features into new, meaningful features.
+
+The `recipes` package allows us to create reusable objects for data preprocessing that can be applied consistently throughout the modeling process. In the `tidymodels` framework, this is typically integrated with the `workflows` package, which combines the preprocessed data (from the recipe) with the chosen model, streamlining the modeling process and ensuring that the same preprocessing steps are applied during both training and evaluation.
+
+Now to prepare our data from modeling we shall select the variables we shall use in our model.
+
+```{r}
+modelttrain <-
+  data_train %>%
+  select(
+    PassengerId, Survived, Age, Sex, 
+    Pclass, SibSp, Parch,Fare, Embarked)
+
+glimpse(modelttrain)
+```
+
+Now that we have our final selected variables for modeling we shall do the initial data split again since we updated the original data.
+
+```{r}
+set.seed(123)
+
+data_split <- initial_split(modelttrain,
+                           prop = 3/4, 
+                           strata = Survived)
+
+data_train <- training(data_split) 
+data_test <- testing(data_split)
+```
+
+With our new data split, we can now create a recipe for data preprocessing. For detailed guidance on various preprocessing techniques, refer to <https://www.tmwr.org/pre-proc-table.html>. Below is the code to create our recipe:
+
+```{r}
+modelttrain_recipe <-
+  recipe(Survived ~ .,data = modelttrain) %>%
+  update_role(PassengerId, new_role = "ID") %>%
+  step_log(Parch,SibSp,Fare) %>%
+  step_naomit(everything(), skip = TRUE) %>%
+  step_novel(all_nominal(), -all_outcomes()) %>%
+  step_normalize(all_numeric(), -all_outcomes(), 
+                 -PassengerId) %>%
+  step_zv(all_numeric(), -all_outcomes()) %>%
+  step_corr(all_numeric(), threshold = 0.7, method = "spearman") 
+```
+
+The `modelttrain_recipe` is designed to preprocess the data for modeling a detailed breakdown of each step is given below:
+
+-   First, we define the recipe with `recipe(Survived ~ ., data = modelttrain)`, specifying `Survived` as the outcome variable and all other columns as predictors using the `modelttrain` dataset.
+
+-   Next, we use `update_role(PassengerId, new_role = "ID")` to use `PassengerId` as an identifier rather than a predictor. This allows us to keep track of individual records without including `PassengerId` in the model.
+
+-   We then apply `step_log(Parch, SibSp, Fare, Age)` to log-transform the skewed numerical variables. This step addresses the skewness in the distributions but note that it can cause issues with negative values.
+
+-   To handle missing values, we use `step_naomit(everything(), skip = TRUE)`, which removes rows with `NA` or `NaN` values. The `skip = TRUE` argument ensures that this step is not applied to new data during model assessment, thus preserving the number of samples.
+
+-   The `step_novel(all_nominal(), -all_outcomes())` step converts nominal variables to factors and handles any new levels not seen during training. This ensures that all categorical variables are appropriately processed.
+
+-   We standardize numeric variables using `step_normalize(all_numeric(), -all_outcomes(), -PassengerId)`, which scales predictors to have a mean of zero and a standard deviation of one.
+
+-   We also remove variables with zero variance using `step_zv(all_numeric(), -all_outcomes())`, as these variables do not provide useful information for modeling.
+
+-   Finally, `step_corr(all_predictors(), threshold = 0.7, method = "spearman")` removes predictors that have high correlations (greater than 0.7) with other predictors, this cab reduce problems related to multicollinearity.
+
+Our new data after preprocessing now looks as below:
+
+```{r}
+summary(modelttrain_recipe)
+```
+
+To verify that our recipe has been applied correctly, we can use the `prep()` and `juice()` functions. The `prep()` function prepares the recipe based on the training data, and the `juice()` function extracts the processed data to inspect the results.
+
+```{r}
+model_data <- 
+  modelttrain_recipe %>% 
+  prep() %>% 
+  juice() 
+
+glimpse(model_data)
+```
+
+## Validation Set
+
+We will now create a validation set that will be used for hyper-parameter tuning during model training. To achieve this, we apply k-fold cross-validation, which helps in splitting the data into multiple folds for more robust evaluation. We will use the `vfold_cv()` function to generate a set of validation folds.
+
+```{r}
+set.seed(145)
+
+cv_folds <-
+ vfold_cv(modelttrain, 
+          v = 5, 
+          strata = Survived) 
+```
+
+## Model building
+
+In the model-building process using the tidy-models framework, we follow a structured approach. We begin by selecting the model type, then specify the engine to be used, and finally define the mode, either regression or classification based on the task at hand. We shall specify different models to be used.
+
+### Logistic Regression
+
+```{r}
+log_spec <- 
+  logistic_reg() %>%
+  set_engine(engine = "glm") %>%
+  set_mode("classification")
+```
+
+### Random Forest
+
+```{r}
+rf_spec <- 
+  rand_forest() %>%
+  set_engine("ranger", importance = "impurity") %>%
+  set_mode("classification")
+```
+
+### K-Nearest Neighbor
+
+```{r}
+knn_spec <- 
+  nearest_neighbor(neighbors = 4) %>% 
+  set_engine("kknn") %>%
+  set_mode("classification") 
+```
+
+# Create Workflows
+
+Next, we create a workflow to integrate the recipe we previously developed into our modeling process. A workflow is an object that brings together both the recipe and the modeling step for seamless execution.
+
+We now bundle the recipe with the earlier stated models:
+
+### Logistic Regression
+
+```{r}
+log_wflow <- 
+ workflow() %>%
+ add_recipe(modelttrain_recipe) %>%
+ add_model(log_spec)
+```
+
+### Random Forest
+
+```{r}
+rf_wflow <-
+ workflow() %>%
+ add_recipe(modelttrain_recipe) %>%
+ add_model(rf_spec) 
+```
+
+### K-Nearest Neighbor
+
+```{r}
+knn_wflow <-
+ workflow() %>%
+ add_recipe(modelttrain_recipe) %>%
+ add_model(knn_spec)
+```
+
+# Evaluate Models
+
+To evaluate our models, we will use the validation set (`cv_folds`) to estimate model performance. We will apply the `fit_resamples()` function to fit the models on each fold and store the results. In order to save predictions from the model and visualise the model fit and residuals we shall use `control_resamples(save_pred = TRUE)` and finally use the `collect_metrics()` function to pick the model that does best on the validation set.
+
+We shall use our workflow object to now perform resampling and use `metric_set()`from the `yardstick` package to choose common performance metrics.
+
+### Logistic Regression
+
+```{r}
+log_res <- 
+  log_wflow %>%
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(
+      save_pred = TRUE)
+    ) 
+```
+
+#### Performance Metrics
+
+From the fitted models we show the performance over all folds below:
+
+```{r}
+log_res %>% collect_metrics(summarize = TRUE)
+```
+
+We also show performance for every single fold:
+
+```{r}
+log_res %>% collect_metrics(summarize = FALSE)
+```
+
+#### Collect predictions
+
+To collect predictions from the model we use the `collect_predictions` function:
+
+```{r}
+log_pred <- 
+  log_res %>%
+  collect_predictions()
+```
+
+#### Confusion Matrix
+
+We also create a *confusion matrix* using `conf_mat()` function, and heat-maps can also be used to visualise the same results.
+
+```{r}
+log_pred %>%
+  conf_mat(Survived, .pred_class) 
+```
+
+```{r}
+log_pred %>%
+  conf_mat(Survived, .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+#### ROC Curve
+
+Receiver Operator Curves are used in classification problems to show performance for given models, in the classification process, using the `roc_curve()` function with the relevant class probability `.pred_above` we can be able to achieve a ROC-Curve showing the performance of each fold.
+
+```{r}
+log_pred %>%
+  group_by(id) %>%
+  roc_curve(Survived, .pred_0) %>%
+  autoplot()
+```
+
+#### Probability Distributions
+
+We can also visualise the predicted probabilities for the two classes.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+log_pred %>%
+  ggplot() +
+  geom_density(aes(x = .pred_0, fill = Survived), alpha = 0.5) +
+  theme_bw()
+```
+
+Next, we will apply the same process to all the models mentioned earlier, but we will focus solely on evaluating their performance by comparing the relevant metrics.
+
+### Random Forest
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+rf_res <-
+  rf_wflow %>%
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+rf_res %>% collect_metrics(summarize = TRUE)
+```
+
+### K-Nearest Neighbor
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+knn_res <- 
+  knn_wflow %>%
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+knn_res %>% collect_metrics(summarize = TRUE)
+```
+
+## Compare Models
+
+We now extract the performance metrics from all the fitted models for comparison.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+log_metrics <- 
+  log_res %>%
+  mutate(model = "Logistic")
+
+rf_metrics <- 
+  rf_res %>%
+  mutate(model = "Random Forest")
+
+knn_metrics <- 
+  knn_res %>%
+  mutate(model = "Knn")
+
+# all models
+model_compare <- bind_rows(log_metrics,rf_metrics,knn_metrics) %>%
+  unnest(.metrics)
+
+# model comparison
+model_comp <- 
+  model_compare %>%
+  unnest(cols = c(.metric, .estimate)) %>%
+  pivot_longer(cols = starts_with(".estimate"), 
+               names_to = "estimate_type", 
+               values_to = "estimate_value") %>%
+  mutate(estimate_type = gsub(".estimate_", "", estimate_type)) %>%
+  filter(.metric %in% c("f_meas", "roc_auc")) 
+
+# change to long format
+mean_metrics <- model_comp %>%
+  group_by(model, .metric) %>%
+  summarise(mean_estimate_value = mean(estimate_value, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = .metric, values_from = mean_estimate_value) %>%
+  rename(mean_f_meas = f_meas, mean_roc_auc = roc_auc)
+
+mean_metrics <- mean_metrics %>%
+  pivot_longer(cols = starts_with("mean_"), 
+               names_to = ".metric", 
+               values_to = "estimate_value") %>%
+  mutate(.metric = gsub("mean_", "", .metric))
+```
+
+```{r}
+# plot metrics
+ggplot(mean_metrics, aes(x = model, y = estimate_value, fill = .metric)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~.metric, scales = "free_y") +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.title.y = element_blank()) +
+  geom_text(aes(label = sprintf("%.2f", estimate_value)), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.5, 
+            size = 3) 
+```
+
+The performance across the models is quite similar, with Random Forest performing slightly better. We will now evaluate the final model on the test set.
+
+To accomplish this, the `last_fit()` function from the `tidymodels` package can be used. This function fits the model to the entire training dataset and evaluates it on the test set. You'll need to provide the `last_fit()` function with the workflow object of the best model and the data split object (excluding the training data). This will allow us to obtain the performance metrics for the final model.
+
+```{r}
+last_fit_rf <- last_fit(rf_wflow, 
+                        split = data_split,
+                        metrics = metric_set(
+                          recall, precision, f_meas, 
+                          accuracy, kap,
+                          roc_auc, sens, spec)
+                        )
+```
+
+To display the performance metrics, we will use the `collect_metrics()` function as previously done.
+
+```{r}
+last_fit_rf %>%
+  collect_metrics()
+```
+
+Based on our results we have a `roc_auc` of 0.7924757 which is generally considered a good performance although we could do better. This means our model has a high ability of finding true positive results than false positives.
+
+Based on our results, we should also examine variable importance to identify the key features influencing the classification.
+
+```{r}
+last_fit_rf %>%
+  pluck(".workflow", 1) %>%  
+  extract_fit_parsnip() %>%
+  vip(num_features = 10)
+```
+
+From the model we see the two most important predictors for our models is Sex and Age of the passenger.
+
+We now take a look at the confusion matrix for the final model:
+
+```{r}
+last_fit_rf %>%
+  collect_predictions() |>
+  conf_mat(Survived, .pred_class) |>
+  autoplot(type = "heatmap")
+```
+
+We shall also create an ROC Curve for the final model:
+
+```{r}
+last_fit_rf |>
+  collect_predictions() |>
+  roc_curve(Survived, .pred_0) |>
+  autoplot()
+```
+
+Given that the validation and test set performances are similar, we conclude that the Random Forest model with the selected hyperparameters is the best choice for predicting Survival on the Titanic.
+
+```{r}
+rf_predictions <- last_fit_rf %>%
+  collect_predictions()
+```
+
+```{r}
+# Impute missing values in the test set
+ttest <- ttest %>%
+  group_by(Pclass) %>%
+  mutate(Age = mean(Age, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(Age = ifelse(is.na(Age), Age, Age))
+
+# extract fitted workflow
+final_workflow <- extract_workflow(last_fit_rf)
+
+# workflow for predictions
+rf_predictions <- predict(final_workflow, ttest) %>%
+  bind_cols(ttest %>% select(PassengerId))
+
+# reorder table
+rf_predictions <- rf_predictions %>%
+  select(PassengerId, everything()) %>% 
+  rename(PassengerId = PassengerId, Survived = .pred_class)
+```
+
+To evaluate our model's performance on the provided test set, we generated predictions using the final model and submitted them to Kaggle, achieving a Public Score of 0.77751.
+
+![](/kagglesubmission.png)
+
+This result, achieved with minimal feature engineering as demonstrated in the tutorial, indicates a somewhat good performance. However, there is potential for further improvement.
+
+By incorporating additional feature engineering and exploring more advanced techniques, one could enhance the model's accuracy.
+
+Further feature extraction and refinement are recommended for those looking to achieve even better results for this model.
+
+```{r}
+# submission file
+write_csv(rf_predictions, "submissionfile.csv")
+```
+
+To conclude this tutorial, the data used in this project comes from the Kaggle **Titanic - Machine Learning from Disaster** competition. You can access and download the dataset by visiting the following [Kaggle page](https://www.kaggle.com/c/titanic/data).

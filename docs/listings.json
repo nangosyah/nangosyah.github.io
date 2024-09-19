@@ -2,7 +2,8 @@
   {
     "listing": "/portfolio.html",
     "items": [
-      "/posts/post-with-code/index.html",
+      "/posts/Using Tidy Models for Machine Learning/index.html",
+      "/posts/Thesis/index.html",
       "/posts/welcome/index.html"
     ]
   }

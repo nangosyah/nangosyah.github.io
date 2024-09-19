@@ -2,10 +2,10 @@
 title: "Model Based Clustering of High Dimensional Longitudinal Data"
 author: "Tom Wellard Nangosyah"
 date: "2024-09-03"
-categories: [r, code, analysis]
-image: "image.jpg"
+categories: [R, Model Based Clustering, Linear Mixed Models, Mixture Models, Peptides]
+image: "mbc.webp"
 ---
 
-## Thesis research 
+## Thesis research
 
 This was my initial Thesis Research on Model based Methods for clustering longitudinal high dimensional data, we used mixture models to classify peptides with similar deuterium exchange profiles overtime. The code for the fitting of model can be found [here](https://github.com/nangosyah/Master-Thesis-MBCLHD-2024){target="blank"}.
