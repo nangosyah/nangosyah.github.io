@@ -22,10 +22,6 @@ Despite the exciting projects I was involved in, I felt the urge to dive deeper 
 
 ### Looking Forward: Open to New Opportunities
 
-Now that I’m nearing the end of my Master’s, I am more than ready to apply my expanded skillset in **data science, statistics, and bioinformatics**. I’m looking for opportunities that will allow me to continue **learning, growing, and making an impact**, especially in health sciences or any other sector where data can drive meaningful change.
+Now that I’m nearing the end of my Master’s, I am more than ready to apply my expanded knowledge in **data science, statistics, and bioinformatics**. I’m looking for opportunities that will allow me to continue **learning, growing, and making an impact**, especially in health sciences or any other sector where data can drive meaningful change. I believe the blend of my past experience with my new expanded knowledge can offer unique perspectives and solutions.
 
-I’ve worked in **financial services, research, and business advisory**, and I’m now keen to pivot into life sciences and related fields. I believe the blend of my past experience with my new technical skills can offer unique perspectives and solutions.
-
-This blog will serve as a platform for me to share the projects I’ve been working on, insights from the world of data science, and my journey of navigating this ever-evolving field. Whether you're here to learn more about data science applications or you’re simply curious about life sciences, I hope you find something interesting.
-
-**And if you’re looking for someone with a diverse background in data-driven problem-solving, feel free to reach out, I'm open to exploring new opportunities!**
+This blog will serve as a platform for me to share some of the projects that interest me and what I have worked on, insights on data science, and my journey of navigating this ever-evolving field. Whether you’re here to learn more about data science applications or you’re simply curious about its application, I hope you find something interesting.
