@@ -1,0 +1,18 @@
+---
+title: "Music Dashboard: Stream & Play Music from Spotify"
+author: "Tom Wellard Nangosyah"
+date: "2025-01-02"
+categories: [R, Spotify, Music Dashboard, Streaming, App Development]
+image: "music_dashboard.webp"
+---
+
+## Music Dashboard: Stream & Play Music from Spotify
+
+This [interactive dashboard](https://nangosyah.github.io/music-dashboard/dashboard.html) allows you to explore and listen to my curated playlist of music that I love.
+
+### Key Features:
+
+-   **Song Selection**: Choose from a personalized playlist of favorite tracks.
+-   **Embedded Player**: Listen to selected songs directly from the dashboard.
+
+Enjoy !

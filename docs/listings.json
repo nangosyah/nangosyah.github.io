@@ -2,6 +2,7 @@
   {
     "listing": "/portfolio.html",
     "items": [
+      "/posts/Music Dashboard/index.html",
       "/posts/Using Tidy Models for Machine Learning/index.html",
       "/posts/Thesis/index.html",
       "/posts/Welcome/index.html"
