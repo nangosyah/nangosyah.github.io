@@ -1,0 +1,11 @@
+---
+title: "Exploring the Diagnostic and Prognostic Potential of OCT Data in Multiple Sclerosis"
+author: "Tom Wellard Nangosyah"
+date: "2025-02-02"
+categories: [Multiple Sclerosis, Machine Learning]
+image: "RNFL_OpticDisc.png"
+---
+
+## **Exploring the Diagnostic and Prognostic Potential of OCT Data in Multiple Sclerosis**
+
+Machine learning (ML) is transforming Multiple Sclerosis (MS) diagnosis by leveraging Optical Coherence Tomography (OCT) data to assess retinal changes linked to neuro-degeneration. This study analyzed OCT data from 230 MS patients using ML models, including Random Forest (RF), Support Vector Machine (SVM), XGBoost, and k-Nearest Neighbors (KNN), to classify MS severity. RF emerged as the best performer, achieving F1-Scores of 0.74 (left eye) and 0.72 (right eye), with key retinal features such as the Superior and Temporal sectors, Central ILM-RPE, and asymmetry metrics identified as critical predictors. However, challenges remain, including measurement variability across OCT devices and segmentation inconsistencies, showing the need for standardization. **Explore the modeling resources** [here](https://github.com/nangosyah/MS-Diagnostics){target="blank"}:
