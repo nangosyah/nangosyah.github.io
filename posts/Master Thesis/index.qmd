@@ -2,7 +2,7 @@
 title: "Exploring the Diagnostic and Prognostic Potential of OCT Data in Multiple Sclerosis"
 author: "Tom Wellard Nangosyah"
 date: "2025-02-02"
-categories: [Multiple Sclerosis, Machine Learning]
+categories: [Tutorials]
 image: "RNFL_OpticDisc.png"
 ---
 

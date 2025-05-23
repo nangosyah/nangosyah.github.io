@@ -2,7 +2,7 @@
 title: "Is 4/20 Dangerous for Driving? A Look at U.S. Fatal Car Crashes"
 author: "Tom Wellard Nangosyah"
 date: "2025-05-06"
-categories: [TidyTuesday, Poisson Regression, Fatal Cars]
+categories: [TidyTuesday]
 image: "fatalcars.webp"
 ---
 

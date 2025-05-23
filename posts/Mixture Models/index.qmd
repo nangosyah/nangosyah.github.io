@@ -2,7 +2,7 @@
 title: "Model Based Clustering of High Dimensional Longitudinal Data"
 author: "Tom Wellard Nangosyah"
 date: "2024-09-03"
-categories: [R, Model Based Clustering, Linear Mixed Models, Mixture Models, Peptides]
+categories: [Linear Mixed Models, Mixture Models]
 image: "mbc.webp"
 ---
 

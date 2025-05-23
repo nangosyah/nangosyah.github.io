@@ -2,7 +2,7 @@
 title: "Music Dashboard: Stream & Play Music from Spotify"
 author: "Tom Wellard Nangosyah"
 date: "2025-01-02"
-categories: [R, Spotify, Music Dashboard, Streaming, App Development]
+categories: [Dashboards]
 image: "music_dashboard.webp"
 ---
 
