@@ -2,7 +2,7 @@
 title: "Using the Tidy-models suite for Machine Learning"
 author: "Tom Wellard Nangosyah"
 date: "2024-09-19"
-categories: [R,  Data Science, Classification, Machine learning, Data Processing, Tidy-models, Titanic dataset]
+categories: [Machine learning, Tidy-models]
 image: "tidymodelsApps.png"
 ---
 
