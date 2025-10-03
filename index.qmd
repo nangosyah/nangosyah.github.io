@@ -1,5 +1,6 @@
 ---
 title: "About"
+subtitle: Consultant & Data Scientist
 image: tompassport.jpg
 about:
   template: jolla
@@ -12,23 +13,17 @@ about:
       href: https://github.com/nangosyah
 ---
 
-I'm passionate about data-driven impact, with experience in research, project management, and client relations across agriculture, renewable energy, and micro-finance.
+**What I do**
 
-I enjoy translating ideas into action, delivering meaningful end-to-end programs, solving complex challenges with cross-functional teams, fostering collaboration through engaging meetings, and building shared value relationships with communities, partners, and donors.
+Translate data into decisions. I design decision support tools, apply statistical and Machine Learning methods, and lead delivery so insights become programs that work, informing strategy, business cases, and executive decisions.
 
-Outside of work, I enjoy Music, Football, Formula One and a lot of other sports.\
-\
-At the moment, I am exploring roles that focus on:
+**Where I’ve worked**
 
-**Health Sciences: research, data analytics, bioinformatics**
+Impact-focused settings across clean energy, micro-finance, socio-economic research, and start-ups working with cross-functional teams and securing multi-partner support to scale solutions.
 
-**Project delivery within development sectors**
+Outside of work, I enjoy Music, Football, Formula One and a lot of other sports.
 
-**Innovation: pilots, initiatives, processes**
-
-**Strategy & transformation**
-
-I am also open to interesting conversations about where I can add value!\
+I’m always open to interesting conversations about where I can add value.\
 \
 \
 \

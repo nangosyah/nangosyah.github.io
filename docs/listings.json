@@ -2,11 +2,11 @@
   {
     "listing": "/portfolio.html",
     "items": [
-      "/posts/Fatal Cars/index.html",
-      "/posts/Thesis 2025/index.html",
+      "/posts/Tidy Tuesday - Fatal Cars/index.html",
+      "/posts/Master Thesis/index.html",
       "/posts/Music Dashboard/index.html",
-      "/posts/Using Tidy Models for Machine Learning/index.html",
-      "/posts/Thesis/index.html"
+      "/posts/Tutorial - Tidy Models for Machine Learning/index.html",
+      "/posts/Mixture Models/index.html"
     ]
   }
 ]
